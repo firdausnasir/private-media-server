@@ -1,15 +1,22 @@
+name: private-media-server
+
+networks:
+  private-media-server:
+
 services:
   jellyfin:
     image: jellyfin/jellyfin:latest
     container_name: jellyfin
     restart: unless-stopped
+    networks:
+      - private-media-server
     ports:
       - "8096:8096"
     volumes:
-      - ~/.config/jellyfin/config:/config
-      - ~/.config/jellyfin/cache:/cache
-      - ~/Downloads/jellyfin_media/Movies:/media/movies
-      - ~/Downloads/jellyfin_media/TV Shows:/media/tv
+      - ${CONFIG_PATH}/jellyfin/config:/config
+      - ${CONFIG_PATH}/jellyfin/cache:/cache
+      - ${MEDIA_PATH}/Movies:/media/movies
+      - ${MEDIA_PATH}/TV Shows:/media/tv
     environment:
       - TZ=Asia/Kuala_Lumpur
 
@@ -17,10 +24,12 @@ services:
     image: fallenbagel/jellyseerr:latest
     container_name: jellyseerr
     restart: unless-stopped
+    networks:
+      - private-media-server
     ports:
       - "5055:5055"
     volumes:
-      - ~/.config/jellyseerr:/app/config
+      - ${CONFIG_PATH}/jellyseerr:/app/config
     environment:
       - TZ=Asia/Kuala_Lumpur
 
@@ -28,11 +37,13 @@ services:
     image: lscr.io/linuxserver/sonarr:latest
     container_name: sonarr
     restart: unless-stopped
+    networks:
+      - private-media-server
     ports:
       - "8989:8989"
     volumes:
-      - ~/.config/sonarr:/config
-      - ~/Downloads/jellyfin_media:/data
+      - ${CONFIG_PATH}/sonarr:/config
+      - ${MEDIA_PATH}:/data
     environment:
       - PUID=1000
       - PGID=1000
@@ -42,11 +53,13 @@ services:
     image: lscr.io/linuxserver/radarr:latest
     container_name: radarr
     restart: unless-stopped
+    networks:
+      - private-media-server
     ports:
       - "7878:7878"
     volumes:
-      - ~/.config/radarr:/config
-      - ~/Downloads/jellyfin_media:/data
+      - ${CONFIG_PATH}/radarr:/config
+      - ${MEDIA_PATH}:/data
     environment:
       - PUID=1000
       - PGID=1000
@@ -56,10 +69,12 @@ services:
     image: lscr.io/linuxserver/prowlarr:latest
     container_name: prowlarr
     restart: unless-stopped
+    networks:
+      - private-media-server
     ports:
       - "9696:9696"
     volumes:
-      - ~/.config/prowlarr:/config
+      - ${CONFIG_PATH}/prowlarr:/config
     environment:
       - PUID=1000
       - PGID=1000
@@ -69,6 +84,8 @@ services:
     image: ghcr.io/flaresolverr/flaresolverr:latest
     container_name: flaresolverr
     restart: unless-stopped
+    networks:
+      - private-media-server
     ports:
       - "8191:8191"
     environment:
@@ -79,13 +96,15 @@ services:
     image: lscr.io/linuxserver/qbittorrent:latest
     container_name: qbittorrent
     restart: unless-stopped
+    networks:
+      - private-media-server
     ports:
       - "8080:8080"
       - "6881:6881"
       - "6881:6881/udp"
     volumes:
-      - ~/.config/qbittorrent:/config
-      - ~/Downloads/jellyfin_media:/data
+      - ${CONFIG_PATH}/qbittorrent:/config
+      - ${MEDIA_PATH}:/data
     environment:
       - PUID=1000
       - PGID=1000
@@ -98,11 +117,13 @@ services:
     image: lscr.io/linuxserver/bazarr:latest
     container_name: bazarr
     restart: unless-stopped
+    networks:
+      - private-media-server
     ports:
       - "6767:6767"
     volumes:
-      - ~/.config/bazarr:/config
-      - ~/Downloads/jellyfin_media:/data
+      - ${CONFIG_PATH}/bazarr:/config
+      - ${MEDIA_PATH}:/data
     environment:
       - PUID=1000
       - PGID=1000
@@ -112,4 +133,6 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: cloudflared
     restart: unless-stopped
-    command: tunnel --no-autoupdate run --token <TOKEN>
+    networks:
+      - private-media-server
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARED_TOKEN}
