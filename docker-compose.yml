@@ -15,8 +15,7 @@ services:
     volumes:
       - ${CONFIG_PATH}/jellyfin/config:/config
       - ${CONFIG_PATH}/jellyfin/cache:/cache
-      - ${MEDIA_PATH}/Movies:/media/movies
-      - ${MEDIA_PATH}/TV Shows:/media/tv
+      - ${MEDIA_PATH}:/media:ro
     environment:
       - TZ=Asia/Kuala_Lumpur
 
