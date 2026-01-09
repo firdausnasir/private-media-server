@@ -91,27 +91,6 @@ services:
       - TZ=Asia/Kuala_Lumpur
       - LOG_LEVEL=info
 
-  qbittorrent:
-    image: lscr.io/linuxserver/qbittorrent:latest
-    container_name: qbittorrent
-    restart: unless-stopped
-    networks:
-      - private-media-server
-    ports:
-      - "8080:8080"
-      - "6881:6881"
-      - "6881:6881/udp"
-    volumes:
-      - ${CONFIG_PATH}/qbittorrent:/config
-      - ${MEDIA_PATH}:/data
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Asia/Kuala_Lumpur
-      - WEBUI_PORT=8080
-      - WEBUI_USERNAME=admin
-      - WEBUI_PASSWORD=admin
-
   bazarr:
     image: lscr.io/linuxserver/bazarr:latest
     container_name: bazarr
@@ -127,6 +106,52 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=Asia/Kuala_Lumpur
+
+  # --- VPN gateway (Mullvad) ---
+  gluetun:
+    image: qmcgaw/gluetun:latest
+    container_name: gluetun
+    platform: linux/arm64
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    networks:
+      - private-media-server
+    environment:
+      - TZ=Asia/Kuala_Lumpur
+
+      # Mullvad (WireGuard)
+      - VPN_SERVICE_PROVIDER=mullvad
+      - VPN_TYPE=wireguard
+      - WIREGUARD_PRIVATE_KEY=${MULLVAD_WG_PRIVATE_KEY}
+      - WIREGUARD_ADDRESSES=${MULLVAD_WG_ADDRESSES} # e.g. 10.x.x.x/32
+
+      # Location selection (pick one style)
+      - SERVER_COUNTRIES=${SERVER_COUNTRIES:-Singapore}
+
+      # Allow LAN -> qBittorrent WebUI via gluetun
+      - FIREWALL_VPN_INPUT_PORTS=8080
+    ports:
+      - "8080:8080" # qBittorrent WebUI
+
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    platform: linux/arm64
+    restart: unless-stopped
+    depends_on:
+      - gluetun
+    network_mode: "service:gluetun"
+    volumes:
+      - ${CONFIG_PATH}/qbittorrent:/config
+      - ${MEDIA_PATH}:/data
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Kuala_Lumpur
+      - WEBUI_PORT=8080
+      - WEBUI_USERNAME=${QBIT_USER:-admin}
+      - WEBUI_PASSWORD=${QBIT_PASS:-admin}
 
   cloudflared:
     image: cloudflare/cloudflared:latest
